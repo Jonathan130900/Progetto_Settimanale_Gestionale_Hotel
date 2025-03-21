@@ -1,0 +1,48 @@
+﻿@model Progetto_Settimanale_Gestionale_Hotel.Models.CreateUserViewModel
+
+<h2>Create User</h2>
+
+<form method="post">
+    <div class="form-group">
+        <label for="Nome">Nome</label>
+        <input type="text" class="form-control" id="Nome" name="Nome" required />
+    </div>
+
+    <div class="form-group">
+        <label for="Cognome">Cognome</label>
+        <input type="text" class="form-control" id="Cognome" name="Cognome" required />
+    </div>
+
+    <div class="form-group">
+        <label for="Email">Email</label>
+        <input type="email" class="form-control" id="Email" name="Email" required />
+    </div>
+
+    <div class="form-group">
+        <label for="Password">Password</label>
+        <input type="password" class="form-control" id="Password" name="Password" required />
+    </div>
+
+    <div class="form-group">
+        <label for="ConfermaPassword">Conferma Password</label>
+        <input type="password" class="form-control" id="ConfermaPassword" name="ConfermaPassword" required />
+    </div>
+
+    @if (!String.IsNullOrEmpty(ViewData["PasswordMismatch"]?.ToString()))
+    {
+        <div class="alert alert-danger">
+            @ViewData["PasswordMismatch"]
+        </div>
+    }
+
+    <div class="form-group">
+        <label for="Role">Ruolo</label>
+        <select class="form-control" id="Role" name="Role">
+            <option value="Admin">Admin</option>
+            <option value="Manager">Manager</option>
+            <option value="Receptionist">Receptionist</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Utente</button>
+</form>
