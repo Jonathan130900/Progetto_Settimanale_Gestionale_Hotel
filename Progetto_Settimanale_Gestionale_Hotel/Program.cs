@@ -28,7 +28,7 @@ builder.Services.AddControllersWithViews();
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
+    var services = scope.ServiceProvider; 
     var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
