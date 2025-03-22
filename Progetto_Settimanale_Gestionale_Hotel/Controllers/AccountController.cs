@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Progetto_Settimanale_Gestionale_Hotel.Models;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Progetto_Settimanale_Gestionale_Hotel.Controllers
 {
@@ -20,51 +22,96 @@ namespace Progetto_Settimanale_Gestionale_Hotel.Controllers
             _signInManager = signInManager;
         }
 
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateUser(CreateUserViewModel model)
+        [HttpGet]
+        public IActionResult Register()
         {
-            if (ModelState.IsValid)
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var userName = model.Nome + model.Cognome.Substring(0, 1);
+            var counter = 1;
+
+            while (await _userManager.FindByNameAsync(userName) != null)
             {
-                if (model.Password != model.ConfermaPassword)
-                {
-                    ViewData["PasswordMismatch"] = "Le password non coincidono!";
-                    return View(model);
-                }
+                userName = model.Nome + model.Cognome.Substring(0, 1) + counter;
+                counter++;
+            }
 
-                var user = new ApplicationUser
-                {
-                    UserName = model.Nome + model.Cognome.Substring(0, 1),
-                    Email = model.Email,
-                    FullName = model.Nome + " " + model.Cognome
-                };
+            var user = new ApplicationUser
+            {
+                UserName = userName,
+                Email = model.Email,
+                Nome = model.Nome,
+                Cognome = model.Cognome
+            };
 
-                var result = await _userManager.CreateAsync(user, model.Password);
+            var result = await _userManager.CreateAsync(user, model.Password);
 
-                if (result.Succeeded)
+            if (result.Succeeded)
+            {
+                if (!_userManager.Users.Any())
                 {
-                    var roleExist = await _roleManager.RoleExistsAsync(model.Role);
-                    if (!roleExist)
+                    if (!await _roleManager.RoleExistsAsync("Admin"))
                     {
-                        ModelState.AddModelError("", "The specified role does not exist.");
-                        return View(model);
+                        await _roleManager.CreateAsync(new ApplicationRole("Admin"));
                     }
 
-                    await _userManager.AddToRoleAsync(user, model.Role);
-
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-
-                    return RedirectToAction("Index", "Home");
+                    await _userManager.AddToRoleAsync(user, "Admin");
                 }
 
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError("", error.Description);
-                }
+                await _signInManager.SignInAsync(user, isPersistent: false);
+                return RedirectToAction("Index", "Home");
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError("", error.Description);
             }
 
             return View(model);
         }
 
+        [HttpGet]
+        public IActionResult Login()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user != null)
+                {
+                    var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, false);
+                    if (result.Succeeded)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+                }
+                ModelState.AddModelError("", "Credenziali errate.");
+            }
+            return View(model);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return RedirectToAction("Login", "Account");
+        }
     }
 }
